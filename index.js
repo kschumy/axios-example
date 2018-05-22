@@ -4,6 +4,17 @@ const reportStatus = (message) => {
   $('#status-message').html(message);
 };
 
+const reportError = (message, errors) => {
+  let content = `<p>${message}</p><ul>`;
+  for (const field in errors) {
+    for (const problem of errors[field]) {
+      content += `<li>${field}: ${problem}</li>`;
+    }
+  }
+  content += "</ul>";
+  reportStatus(content);
+};
+
 const FORM_FIELDS = ['name', 'age', 'owner'];
 const inputField = name => $(`#pet-form input[name="${name}"]`); // one line arrow function
 
@@ -20,6 +31,11 @@ const readFormData = () => {
   return formData;
 };
 
+const clearForm = () => {
+  FORM_FIELDS.forEach((field) => {
+    inputField(field).val('');
+  });
+};
 
 const loadPets = () => {
   const petList = $('#pet-list');
@@ -51,29 +67,38 @@ const createPet = (event) => {
   event.preventDefault();
   // from the form (aka the stuff on the HTML, figure out what the new pet should look like.
 
-  let petData = readFormData();
+  let petData = readFormData(); // new verson. See below.
 
+  // ORIGINAL VERSION
   // let petData = {};
-  petData['name'] = $(`input[name="name"]`).val();
-  petData['age'] = $(`input[name="age"]`).val();
-  petData['owner'] = $(`input[name="owner"]`).val();
-  console.log(petData);
+  // petData['name'] = $(`input[name="name"]`).val();
+  // petData['age'] = $(`input[name="age"]`).val();
+  // petData['owner'] = $(`input[name="owner"]`).val();
+  // console.log(petData);
 
   // make a POST request to the Pets API
   // make sure it's the right endpoint
   // with the right data
   axios.post(URL, petData)
     .then((response) => {
-      console.log(response);
-      reportStatus('Successfully added a pet!');
-
+      // console.log(response);
+      reportStatus(`Successfully added a pet with ID ${response.data.id}!`);
+      clearForm();
     })
     .catch((error) => {
       console.log(error.response);
-      reportStatus(`Encountered an error: ${error.message}`);
+      if (error.response.data && error.response.data.errors) {
+        reportError(
+          `Encountered an error: ${error.message}`,
+          error.response.data.errors
+        );
+      } else {
+        reportStatus(`Encountered an error: ${error.message}`);
+      }
     });
 
   // Display any feedback we want to give to the user
+  clearForm();
 };
 
 $(document).ready(() => {
